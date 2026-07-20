@@ -1,7 +1,10 @@
 package com.mehmet.ezanvakti
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 private val VAKIT_ADLARI = listOf("İmsak", "Güneş", "Öğle", "İkindi", "Akşam", "Yatsı")
 
@@ -34,8 +39,16 @@ class MainActivity : ComponentActivity() {
         onPermissionResult = null
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        // Bildirim izni sonucu
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        createNotificationChannel()
+        requestNotificationPermission()
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -44,6 +57,34 @@ class MainActivity : ComponentActivity() {
                         requestLocationPermission = { cb -> requestLocationPermission(cb) }
                     )
                 }
+            }
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "prayer_channel",
+                "Ezan Vakitleri",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Ezan vakitleri geldiğinde bildirim gönderir"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+            }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
@@ -75,6 +116,7 @@ fun EzanVaktiScreen(
     var times by remember { mutableStateOf<List<String>?>(null) }
     var date by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
+    var notificationEnabled by remember { mutableStateOf(true) }
 
     fun loadTimes() {
         if (isLoading) return
@@ -95,6 +137,10 @@ fun EzanVaktiScreen(
                     times = it.times
                     date = it.date
                     status = "Tamam"
+                    
+                    if (notificationEnabled) {
+                        scheduleNotifications(it.times)
+                    }
                 }.onFailure {
                     status = "Hata"
                     errorText = it.message
@@ -104,6 +150,39 @@ fun EzanVaktiScreen(
                 errorText = e.message
             }
             isLoading = false
+        }
+    }
+
+    fun scheduleNotifications(times: List<String>) {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val prayerTimes = listOf(
+            "İmsak" to times[0],
+            "Güneş" to times[1],
+            "Öğle" to times[2],
+            "İkindi" to times[3],
+            "Akşam" to times[4],
+            "Yatsı" to times[5]
+        )
+        
+        prayerTimes.forEach { (name, time) ->
+            val (hour, minute) = time.split(":").map { it.toInt() }
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+            }
+            
+            // Eğer vakit geçmişse ertesi güne al
+            if (calendar.timeInMillis <= System.currentTimeMillis()) {
+                calendar.add(Calendar.DAY_OF_YEAR, 1)
+            }
+            
+            PrayerNotificationService.scheduleNotification(
+                context,
+                name,
+                "$name vakti girdi",
+                calendar.timeInMillis
+            )
         }
     }
 
@@ -141,8 +220,27 @@ fun EzanVaktiScreen(
         )
         Spacer(Modifier.height(8.dp))
 
-        if (status.isNotEmpty()) {
-            Text(status)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (status.isNotEmpty()) {
+                Text(status)
+            }
+            Row {
+                Text("Bildirim", style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.width(4.dp))
+                Switch(
+                    checked = notificationEnabled,
+                    onCheckedChange = { 
+                        notificationEnabled = it
+                        if (it && times != null) {
+                            scheduleNotifications(times!!)
+                        }
+                    }
+                )
+            }
         }
 
         if (date.isNotEmpty()) {
