@@ -2,7 +2,6 @@ package com.mehmet.ezanvakti
 
 import android.app.AlarmManager
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -36,7 +35,6 @@ class PrayerNotificationReceiver : BroadcastReceiver() {
 object PrayerNotificationService {
     
     private const val ONGOING_NOTIFICATION_ID = 1000
-    private var currentOngoingNotification: Notification? = null
     
     fun scheduleNotification(context: Context, name: String, message: String, timeMillis: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -98,14 +96,14 @@ object PrayerNotificationService {
         
         val notification = NotificationCompat.Builder(context, "prayer_channel")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("🕌 $currentPrayer ($currentTime)")
+            .setContentTitle("🕌 $currentPrayer $currentTime")
             .setContentText("⏳ Sonraki: $nextPrayer $nextTime")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
         
-        currentOngoingNotification = notification
         NotificationManagerCompat.from(context).notify(
             ONGOING_NOTIFICATION_ID,
             notification
@@ -114,7 +112,6 @@ object PrayerNotificationService {
     
     fun removeOngoingNotification(context: Context) {
         NotificationManagerCompat.from(context).cancel(ONGOING_NOTIFICATION_ID)
-        currentOngoingNotification = null
     }
     
     private fun showPermissionNotification(context: Context) {
