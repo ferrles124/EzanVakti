@@ -2,12 +2,10 @@ package com.mehmet.ezanvakti
 
 import android.annotation.SuppressLint
 import android.content.Context
-import com.google.android.gms.location.CurrentLocationRequest
+import android.location.Location
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 object LocationHelper {
 
@@ -15,31 +13,29 @@ object LocationHelper {
     suspend fun getCurrentLocation(context: Context): Pair<Double, Double>? {
         val client = LocationServices.getFusedLocationProviderClient(context)
 
-        // Önce taze bir konum iste (GPS/ağ, yüksek doğruluk)
-        val fresh = trySuspend {
-            val request = CurrentLocationRequest.Builder()
-                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                .setDurationMillis(15000)
-                .build()
-            client.getCurrentLocation(request, null)
+        val location = try {
+            getFreshLocation(client)
+        } catch (e: Exception) {
+            null
         }
-        if (fresh != null) return Pair(fresh.latitude, fresh.longitude)
 
-        // Taze konum gelmezse son bilinen konumu dene
-        val last = trySuspend { client.lastLocation }
-        if (last != null) return Pair(last.latitude, last.longitude)
-
-        return null
+        return location?.let { Pair(it.latitude, it.longitude) }
     }
 
     @SuppressLint("MissingPermission")
-    private suspend fun trySuspend(
-        call: () -> com.google.android.gms.tasks.Task<android.location.Location>
-    ): android.location.Location? {
+    private suspend fun getFreshLocation(client: com.google.android.gms.location.FusedLocationProviderClient): Location? {
         return suspendCancellableCoroutine { cont ->
-            call()
-                .addOnSuccessListener { location -> cont.resume(location) }
-                .addOnFailureListener { e -> cont.resumeWithException(e) }
+            client.lastLocation
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        cont.resume(location)
+                    } else {
+                        cont.resume(null)
+                    }
+                }
+                .addOnFailureListener {
+                    cont.resume(null)
+                }
         }
     }
 }
