@@ -35,6 +35,16 @@ object PrayerNotificationService {
     
     fun scheduleNotification(context: Context, name: String, message: String, timeMillis: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        
+        // Alarm izni kontrolü
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) {
+                // İzin yoksa bildirim göster
+                showPermissionNotification(context)
+                return
+            }
+        }
+        
         val intent = Intent(context, PrayerNotificationReceiver::class.java).apply {
             putExtra("name", name)
             putExtra("message", message)
@@ -47,18 +57,38 @@ object PrayerNotificationService {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                timeMillis,
-                pendingIntent
-            )
-        } else {
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                timeMillis,
-                pendingIntent
-            )
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    timeMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    timeMillis,
+                    pendingIntent
+                )
+            }
+        } catch (e: SecurityException) {
+            // Alarm izni yoksa bildirim göster
+            showPermissionNotification(context)
         }
+    }
+    
+    private fun showPermissionNotification(context: Context) {
+        val notification = NotificationCompat.Builder(context, "prayer_channel")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("⚠️ Alarm İzni Gerekli")
+            .setContentText("Ezan vakitleri için alarm iznini etkinleştirin")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        
+        NotificationManagerCompat.from(context).notify(
+            999,
+            notification
+        )
     }
 }
