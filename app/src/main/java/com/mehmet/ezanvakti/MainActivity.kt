@@ -9,22 +9,42 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.mehmet.ezanvakti.ui.VakitIkonlari
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 
 private val VAKIT_ADLARI = listOf("İmsak", "Güneş", "Öğle", "İkindi", "Akşam", "Yatsı")
+private val VAKIT_IKONLAR = listOf(
+    VakitIkonlari.imsak,
+    VakitIkonlari.gunes,
+    VakitIkonlari.ogle,
+    VakitIkonlari.ikindi,
+    VakitIkonlari.aksam,
+    VakitIkonlari.yatsi
+)
 
 class MainActivity : ComponentActivity() {
 
@@ -41,9 +61,7 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        // Bildirim izni sonucu
-    }
+    ) { granted -> }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,6 +121,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun EzanVaktiScreen(
     hasLocationPermission: () -> Boolean,
@@ -117,6 +136,34 @@ fun EzanVaktiScreen(
     var date by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
     var notificationEnabled by remember { mutableStateOf(true) }
+    var currentPrayerIndex by remember { mutableStateOf(-1) }
+    var nextPrayerIndex by remember { mutableStateOf(-1) }
+
+    val gradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF0D2B1F),
+            Color(0xFF1A4D3E),
+            Color(0xFF0D2B1F)
+        )
+    )
+
+    fun findCurrentPrayer(times: List<String>): Int {
+        val now = Calendar.getInstance()
+        val currentTime = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+        
+        val timesInMinutes = times.map { time ->
+            val (h, m) = time.split(":").map { it.toInt() }
+            h * 60 + m
+        }
+        
+        var index = -1
+        for (i in timesInMinutes.indices) {
+            if (timesInMinutes[i] <= currentTime) {
+                index = i
+            }
+        }
+        return if (index >= 0 && index < timesInMinutes.size - 1) index else -1
+    }
 
     fun scheduleNotifications(times: List<String>) {
         val prayerTimes = listOf(
@@ -168,6 +215,10 @@ fun EzanVaktiScreen(
                     times = it.times
                     date = it.date
                     status = "Tamam"
+                    currentPrayerIndex = findCurrentPrayer(it.times)
+                    nextPrayerIndex = if (currentPrayerIndex >= 0 && currentPrayerIndex < it.times.size - 1) 
+                        currentPrayerIndex + 1 
+                    else -1
                     
                     if (notificationEnabled) {
                         scheduleNotifications(it.times)
@@ -203,76 +254,301 @@ fun EzanVaktiScreen(
         start()
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(gradient)
     ) {
-        Spacer(Modifier.height(24.dp))
-        Text(
-            "Ezan Vakti",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (status.isNotEmpty()) {
-                Text(status)
-            }
-            Row {
-                Text("Bildirim", style = MaterialTheme.typography.bodySmall)
-                Spacer(Modifier.width(4.dp))
-                Switch(
-                    checked = notificationEnabled,
-                    onCheckedChange = { 
-                        notificationEnabled = it
-                        if (it && times != null) {
-                            scheduleNotifications(times!!)
-                        }
-                    }
+            Spacer(Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "🕌 Ezan Vakti",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFD4AF37)
+                    )
                 )
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = if (notificationEnabled) Color(0xFFD4AF37) else Color.Gray
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Switch(
+                        checked = notificationEnabled,
+                        onCheckedChange = {
+                            notificationEnabled = it
+                            if (it && times != null) {
+                                scheduleNotifications(times!!)
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color(0xFFD4AF37),
+                            checkedTrackColor = Color(0xFF1A4D3E)
+                        )
+                    )
+                }
             }
-        }
 
-        if (date.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            Text(date, style = MaterialTheme.typography.titleMedium)
-        }
-
-        times?.let { list ->
-            Spacer(Modifier.height(16.dp))
-            list.forEachIndexed { index, time ->
-                val label = VAKIT_ADLARI.getOrElse(index) { "Vakit ${index + 1}" }
-                Row(
+            Spacer(Modifier.height(8.dp))
+            
+            if (date.isNotEmpty()) {
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF1E5A45).copy(alpha = 0.6f)
+                    )
                 ) {
-                    Text(label, style = MaterialTheme.typography.bodyLarge)
-                    Text(time, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "📅 $date",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        color = Color(0xFFF5E6A3),
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            if (nextPrayerIndex >= 0 && times != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFD4AF37).copy(alpha = 0.2f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                "⏳ Sonraki Vakit",
+                                color = Color(0xFFD4AF37),
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                VAKIT_ADLARI[nextPrayerIndex],
+                                color = Color.White,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            times!![nextPrayerIndex],
+                            color = Color(0xFFD4AF37),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            times?.let { list ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 500.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(list.indices.toList()) { index ->
+                        val isCurrent = index == currentPrayerIndex
+                        val isNext = index == nextPrayerIndex
+                        
+                        AnimatedContent(
+                            targetState = isCurrent,
+                            transitionSpec = {
+                                fadeIn() + slideInVertically() togetherWith 
+                                fadeOut() + slideOutVertically()
+                            }
+                        ) { current ->
+                            PrayerCard(
+                                name = VAKIT_ADLARI[index],
+                                time = list[index],
+                                icon = VAKIT_IKONLAR[index],
+                                isCurrent = current,
+                                isNext = isNext
+                            )
+                        }
+                    }
+                }
+            }
+
+            errorText?.let {
+                Spacer(Modifier.height(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFB71C1C).copy(alpha = 0.8f)
+                    )
+                ) {
+                    Text(
+                        "⚠️ $it",
+                        modifier = Modifier.padding(12.dp),
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = { start() },
+                enabled = !isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFD4AF37),
+                    disabledContainerColor = Color(0xFF1A4D3E)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color(0xFF0D2B1F)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Yükleniyor...",
+                        color = Color(0xFF0D2B1F),
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = Color(0xFF0D2B1F)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Yenile",
+                        color = Color(0xFF0D2B1F),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
+    }
+}
 
-        errorText?.let {
-            Spacer(Modifier.height(16.dp))
-            Text("Hata: $it", color = MaterialTheme.colorScheme.error)
-        }
+@Composable
+fun PrayerCard(
+    name: String,
+    time: String,
+    icon: ImageVector,
+    isCurrent: Boolean,
+    isNext: Boolean
+) {
+    val cardColor = when {
+        isCurrent -> Color(0xFFD4AF37).copy(alpha = 0.3f)
+        isNext -> Color(0xFF1E5A45).copy(alpha = 0.6f)
+        else -> Color(0xFF1E5A45).copy(alpha = 0.3f)
+    }
+    
+    val borderColor = when {
+        isCurrent -> Color(0xFFD4AF37)
+        isNext -> Color(0xFFF5E6A3).copy(alpha = 0.5f)
+        else -> Color.Transparent
+    }
 
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = { start() },
-            enabled = !isLoading
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = cardColor
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(if (isLoading) "Yükleniyor..." else "Yenile")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (isCurrent) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(
+                                Color(0xFFD4AF37),
+                                shape = RoundedCornerShape(50)
+                            )
+                    )
+                }
+                
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (isCurrent) Color(0xFFD4AF37) else Color(0xFFF5E6A3)
+                )
+                
+                Column {
+                    Text(
+                        name,
+                        color = if (isCurrent) Color(0xFFD4AF37) else Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                    )
+                    if (isCurrent) {
+                        Text(
+                            "🟡 Şu an",
+                            color = Color(0xFFD4AF37),
+                            fontSize = 10.sp
+                        )
+                    } else if (isNext) {
+                        Text(
+                            "⏳ Sıradaki",
+                            color = Color(0xFFF5E6A3),
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+            
+            Text(
+                time,
+                color = if (isCurrent) Color(0xFFD4AF37) else Color.White,
+                fontSize = 20.sp,
+                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+            )
         }
     }
 }
