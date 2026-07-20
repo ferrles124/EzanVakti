@@ -42,9 +42,6 @@ object PrayerTimesRepository {
 
                 val body = connection.inputStream.bufferedReader().use { it.readText() }
 
-                // API'nin tam alan isimlerini henüz doğrulayamadık; JSON içindeki
-                // tüm SS:DD formatlı zamanları sırayla çekiyoruz. Diyanet'in
-                // standart sırası: İmsak, Güneş, Öğle, İkindi, Akşam, Yatsı.
                 val allTimes = TIME_REGEX.findAll(body).map { it.value }.toList()
                 val foundDate = DATE_REGEX.find(body)?.value ?: today
 
