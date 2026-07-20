@@ -28,7 +28,10 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
-        onPermissionResult?.invoke(results.values.any { it })
+        val granted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        onPermissionResult?.invoke(granted)
+        onPermissionResult = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,8 +51,6 @@ class MainActivity : ComponentActivity() {
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             this, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     }
 
@@ -69,19 +70,23 @@ fun EzanVaktiScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var status by remember { mutableStateOf("Konum bekleniyor...") }
+    var isLoading by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("") }
     var times by remember { mutableStateOf<List<String>?>(null) }
     var date by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     fun loadTimes() {
+        if (isLoading) return
         scope.launch {
+            isLoading = true
             status = "Konum alınıyor..."
             errorText = null
             try {
                 val location = LocationHelper.getCurrentLocation(context)
                 if (location == null) {
-                    status = "Konum alınamadı."
+                    status = "Konum alınamadı"
+                    isLoading = false
                     return@launch
                 }
                 status = "Vakitler getiriliyor..."
@@ -98,6 +103,7 @@ fun EzanVaktiScreen(
                 status = "Hata"
                 errorText = e.message
             }
+            isLoading = false
         }
     }
 
@@ -106,21 +112,38 @@ fun EzanVaktiScreen(
             loadTimes()
         } else {
             requestLocationPermission { granted ->
-                if (granted) loadTimes() else status = "Konum izni verilmedi."
+                if (granted) {
+                    loadTimes()
+                } else {
+                    status = "Konum izni verilmedi"
+                    errorText = "Lütfen ayarlardan konum iznini etkinleştirin"
+                }
             }
         }
     }
 
-    LaunchedEffect(Unit) { start() }
+    LaunchedEffect(Unit) {
+        start()
+    }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(24.dp))
-        Text("Ezan Vakti", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(
+            "Ezan Vakti",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(Modifier.height(8.dp))
-        Text(status)
+
+        if (status.isNotEmpty()) {
+            Text(status)
+        }
 
         if (date.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
@@ -132,7 +155,9 @@ fun EzanVaktiScreen(
             list.forEachIndexed { index, time ->
                 val label = VAKIT_ADLARI.getOrElse(index) { "Vakit ${index + 1}" }
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(label, style = MaterialTheme.typography.bodyLarge)
@@ -143,10 +168,15 @@ fun EzanVaktiScreen(
 
         errorText?.let {
             Spacer(Modifier.height(16.dp))
-            Text("Sorun: $it", color = MaterialTheme.colorScheme.error)
+            Text("Hata: $it", color = MaterialTheme.colorScheme.error)
         }
 
         Spacer(Modifier.height(24.dp))
-        Button(onClick = { start() }) { Text("Yenile") }
+        Button(
+            onClick = { start() },
+            enabled = !isLoading
+        ) {
+            Text(if (isLoading) "Yükleniyor..." else "Yenile")
+        }
     }
 }
