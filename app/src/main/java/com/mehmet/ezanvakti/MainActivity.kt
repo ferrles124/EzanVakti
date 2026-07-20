@@ -118,6 +118,37 @@ fun EzanVaktiScreen(
     var errorText by remember { mutableStateOf<String?>(null) }
     var notificationEnabled by remember { mutableStateOf(true) }
 
+    fun scheduleNotifications(times: List<String>) {
+        val prayerTimes = listOf(
+            "İmsak" to times[0],
+            "Güneş" to times[1],
+            "Öğle" to times[2],
+            "İkindi" to times[3],
+            "Akşam" to times[4],
+            "Yatsı" to times[5]
+        )
+        
+        prayerTimes.forEach { (name, time) ->
+            val (hour, minute) = time.split(":").map { it.toInt() }
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+            }
+            
+            if (calendar.timeInMillis <= System.currentTimeMillis()) {
+                calendar.add(Calendar.DAY_OF_YEAR, 1)
+            }
+            
+            PrayerNotificationService.scheduleNotification(
+                context,
+                name,
+                "$name vakti girdi",
+                calendar.timeInMillis
+            )
+        }
+    }
+
     fun loadTimes() {
         if (isLoading) return
         scope.launch {
@@ -150,39 +181,6 @@ fun EzanVaktiScreen(
                 errorText = e.message
             }
             isLoading = false
-        }
-    }
-
-    fun scheduleNotifications(times: List<String>) {
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-        val prayerTimes = listOf(
-            "İmsak" to times[0],
-            "Güneş" to times[1],
-            "Öğle" to times[2],
-            "İkindi" to times[3],
-            "Akşam" to times[4],
-            "Yatsı" to times[5]
-        )
-        
-        prayerTimes.forEach { (name, time) ->
-            val (hour, minute) = time.split(":").map { it.toInt() }
-            val calendar = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, hour)
-                set(Calendar.MINUTE, minute)
-                set(Calendar.SECOND, 0)
-            }
-            
-            // Eğer vakit geçmişse ertesi güne al
-            if (calendar.timeInMillis <= System.currentTimeMillis()) {
-                calendar.add(Calendar.DAY_OF_YEAR, 1)
-            }
-            
-            PrayerNotificationService.scheduleNotification(
-                context,
-                name,
-                "$name vakti girdi",
-                calendar.timeInMillis
-            )
         }
     }
 
@@ -278,4 +276,3 @@ fun EzanVaktiScreen(
         }
     }
 }
- 
