@@ -165,6 +165,18 @@ fun EzanVaktiScreen(
         return if (index >= 0 && index < timesInMinutes.size - 1) index else -1
     }
 
+    fun updateOngoingNotification(times: List<String>, currentIndex: Int, nextIndex: Int) {
+        if (currentIndex >= 0 && nextIndex >= 0) {
+            PrayerNotificationService.updateOngoingNotification(
+                context,
+                VAKIT_ADLARI[currentIndex],
+                times[currentIndex],
+                VAKIT_ADLARI[nextIndex],
+                times[nextIndex]
+            )
+        }
+    }
+
     fun scheduleNotifications(times: List<String>) {
         val prayerTimes = listOf(
             "İmsak" to times[0],
@@ -222,6 +234,9 @@ fun EzanVaktiScreen(
                     
                     if (notificationEnabled) {
                         scheduleNotifications(it.times)
+                        if (currentPrayerIndex >= 0 && nextPrayerIndex >= 0) {
+                            updateOngoingNotification(it.times, currentPrayerIndex, nextPrayerIndex)
+                        }
                     }
                 }.onFailure {
                     status = "Hata"
@@ -295,6 +310,11 @@ fun EzanVaktiScreen(
                             notificationEnabled = it
                             if (it && times != null) {
                                 scheduleNotifications(times!!)
+                                if (currentPrayerIndex >= 0 && nextPrayerIndex >= 0) {
+                                    updateOngoingNotification(times!!, currentPrayerIndex, nextPrayerIndex)
+                                }
+                            } else {
+                                PrayerNotificationService.removeOngoingNotification(context)
                             }
                         },
                         colors = SwitchDefaults.colors(
@@ -527,6 +547,7 @@ fun PrayerCard(
                         fontSize = 18.sp,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                     )
+                    
                     if (isCurrent) {
                         Text(
                             "🟡 Şu an",
@@ -552,3 +573,4 @@ fun PrayerCard(
         }
     }
 }
+                          
