@@ -2,6 +2,7 @@ package com.mehmet.ezanvakti
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -10,13 +11,9 @@ import java.util.Locale
 import java.util.TimeZone
 
 data class PrayerTimesResult(
-    val rawJson: String,
     val times: List<String>,
     val date: String
 )
-
-private val TIME_REGEX = Regex("""\b([01][0-9]|2[0-3]):[0-5][0-9]\b""")
-private val DATE_REGEX = Regex("""\b(20\d{2}-\d{2}-\d{2})\b""")
 
 object PrayerTimesRepository {
 
@@ -26,14 +23,14 @@ object PrayerTimesRepository {
                 val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
                 val tzOffsetMinutes = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
 
-                val url = "https://vakit.vercel.app/api/timesForGPS" +
-                        "?lat=$lat&lng=$lng&date=$today&days=1" +
-                        "&timezoneOffset=$tzOffsetMinutes&calculationMethod=Turkey"
+                val url = "https://api.aladhan.com/v1/timings/$today" +
+                        "?latitude=$lat&longitude=$lng&method=13&timezonestring=Europe/Istanbul"
 
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
+                connection.setRequestProperty("Accept", "application/json")
 
                 val responseCode = connection.responseCode
                 if (responseCode != HttpURLConnection.HTTP_OK) {
@@ -41,17 +38,22 @@ object PrayerTimesRepository {
                 }
 
                 val body = connection.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(body)
+                val data = json.getJSONObject("data")
+                val timings = data.getJSONObject("timings")
 
-                val allTimes = TIME_REGEX.findAll(body).map { it.value }.toList()
-                val foundDate = DATE_REGEX.find(body)?.value ?: today
+                val times = listOf(
+                    timings.getString("Fajr"),
+                    timings.getString("Sunrise"),
+                    timings.getString("Dhuhr"),
+                    timings.getString("Asr"),
+                    timings.getString("Maghrib"),
+                    timings.getString("Isha")
+                ).map { it.substring(0, 5) }
 
-                if (allTimes.size < 6) {
-                    return@withContext Result.failure(
-                        Exception("Vakit verisi ayrıştırılamadı. Ham veri: ${body.take(500)}")
-                    )
-                }
+                val date = data.getJSONObject("date").getString("readable")
 
-                Result.success(PrayerTimesResult(body, allTimes.take(6), foundDate))
+                Result.success(PrayerTimesResult(times, date))
             } catch (e: Exception) {
                 Result.failure(e)
             }
