@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.mehmet.ezanvakti.ui.VakitIkonlari
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -89,6 +90,7 @@ class MainActivity : ComponentActivity() {
                 description = "Ezan vakitleri geldiğinde bildirim gönderir"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500)
+                setShowBadge(true)
             }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -195,6 +197,7 @@ fun EzanVaktiScreen(
                 set(Calendar.SECOND, 0)
             }
             
+            // Vakit geçmişse ertesi güne al
             if (calendar.timeInMillis <= System.currentTimeMillis()) {
                 calendar.add(Calendar.DAY_OF_YEAR, 1)
             }
@@ -234,6 +237,7 @@ fun EzanVaktiScreen(
                     
                     if (notificationEnabled) {
                         scheduleNotifications(it.times)
+                        // Kalıcı bildirimi hemen göster
                         if (currentPrayerIndex >= 0 && nextPrayerIndex >= 0) {
                             updateOngoingNotification(it.times, currentPrayerIndex, nextPrayerIndex)
                         }
@@ -265,8 +269,24 @@ fun EzanVaktiScreen(
         }
     }
 
+    // Her dakika kontrol et
     LaunchedEffect(Unit) {
         start()
+        while (true) {
+            delay(60000) // 1 dakika
+            if (times != null && notificationEnabled) {
+                val newCurrent = findCurrentPrayer(times!!)
+                if (newCurrent != currentPrayerIndex) {
+                    currentPrayerIndex = newCurrent
+                    nextPrayerIndex = if (currentPrayerIndex >= 0 && currentPrayerIndex < times!!.size - 1) 
+                        currentPrayerIndex + 1 
+                    else -1
+                    if (currentPrayerIndex >= 0 && nextPrayerIndex >= 0) {
+                        updateOngoingNotification(times!!, currentPrayerIndex, nextPrayerIndex)
+                    }
+                }
+            }
+        }
     }
 
     Box(
@@ -496,12 +516,6 @@ fun PrayerCard(
         isNext -> Color(0xFF1E5A45).copy(alpha = 0.6f)
         else -> Color(0xFF1E5A45).copy(alpha = 0.3f)
     }
-    
-    val borderColor = when {
-        isCurrent -> Color(0xFFD4AF37)
-        isNext -> Color(0xFFF5E6A3).copy(alpha = 0.5f)
-        else -> Color.Transparent
-    }
 
     Card(
         modifier = Modifier
@@ -547,7 +561,6 @@ fun PrayerCard(
                         fontSize = 18.sp,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                     )
-                    
                     if (isCurrent) {
                         Text(
                             "🟡 Şu an",
@@ -573,4 +586,4 @@ fun PrayerCard(
         }
     }
 }
-                          
+                        
