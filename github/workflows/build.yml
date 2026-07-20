@@ -33,3 +33,4 @@ jobs:
         with:
           name: ezan-vakti-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+ 
