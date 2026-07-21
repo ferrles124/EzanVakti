@@ -9,7 +9,6 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.mehmet.ezanvakti.ui.VakitIkonlari
 import java.util.*
 
 class PrayerNotificationReceiver : BroadcastReceiver() {
@@ -18,7 +17,7 @@ class PrayerNotificationReceiver : BroadcastReceiver() {
         val message = intent.getStringExtra("message") ?: "Vakit girdi"
         
         val notification = NotificationCompat.Builder(context, "prayer_channel")
-            .setSmallIcon(VakitIkonlari.notification)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(name)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -96,7 +95,7 @@ object PrayerNotificationService {
         )
         
         val notification = NotificationCompat.Builder(context, "prayer_channel")
-            .setSmallIcon(VakitIkonlari.notification)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("$currentPrayer $currentTime")
             .setContentText("Sonraki: $nextPrayer $nextTime  |  Kalan: $remaining")
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -117,7 +116,7 @@ object PrayerNotificationService {
     
     private fun showPermissionNotification(context: Context) {
         val notification = NotificationCompat.Builder(context, "prayer_channel")
-            .setSmallIcon(VakitIkonlari.notification)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Alarm Izni Gerekli")
             .setContentText("Ezan vakitleri için alarm iznini etkinleştirin")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
