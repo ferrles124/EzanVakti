@@ -333,7 +333,7 @@ fun EzanVaktiScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_mosque),
+                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_mosque),
                         contentDescription = null,
                         tint = Color(0xFFD4AF37),
                         modifier = Modifier.size(32.dp)
@@ -350,7 +350,7 @@ fun EzanVaktiScreen(
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_notification),
+                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_notification),
                         contentDescription = null,
                         tint = if (notificationEnabled) Color(0xFFD4AF37) else Color.Gray
                     )
@@ -426,7 +426,7 @@ fun EzanVaktiScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_hourglass),
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_hourglass),
                                     contentDescription = null,
                                     tint = Color(0xFFD4AF37),
                                     modifier = Modifier.size(24.dp)
@@ -464,7 +464,7 @@ fun EzanVaktiScreen(
                 }
             }
 
-                        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
             times?.let { list ->
                 LazyColumn(
@@ -478,13 +478,13 @@ fun EzanVaktiScreen(
                         val isNext = index == nextPrayerIndex
                         
                         val iconRes = when (index) {
-                            0 -> com.mehmet.ezanvakti.R.drawable.ic_imsak
-                            1 -> com.mehmet.ezanvakti.R.drawable.ic_gunes
-                            2 -> com.mehmet.ezanvakti.R.drawable.ic_ogle
-                            3 -> com.mehmet.ezanvakti.R.drawable.ic_ikindi
-                            4 -> com.mehmet.ezanvakti.R.drawable.ic_aksam
-                            5 -> com.mehmet.ezanvakti.R.drawable.ic_yatsi
-                            else -> com.mehmet.ezanvakti.R.drawable.ic_imsak
+                            0 -> R.drawable.ic_imsak
+                            1 -> R.drawable.ic_gunes
+                            2 -> R.drawable.ic_ogle
+                            3 -> R.drawable.ic_ikindi
+                            4 -> R.drawable.ic_aksam
+                            5 -> R.drawable.ic_yatsi
+                            else -> R.drawable.ic_imsak
                         }
                         
                         AnimatedContent(
@@ -603,7 +603,7 @@ fun PrayerCard(
             ) {
                 if (isCurrent) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_current),
+                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_current),
                         contentDescription = null,
                         tint = Color(0xFFD4AF37),
                         modifier = Modifier.size(12.dp)
