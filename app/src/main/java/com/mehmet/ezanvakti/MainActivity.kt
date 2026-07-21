@@ -40,12 +40,12 @@ import java.util.*
 
 private val VAKIT_ADLARI = listOf("İmsak", "Güneş", "Öğle", "İkindi", "Akşam", "Yatsı")
 private val VAKIT_IKONLAR = listOf(
-    VakitIkonlari.imsak,
-    VakitIkonlari.gunes,
-    VakitIkonlari.ogle,
-    VakitIkonlari.ikindi,
-    VakitIkonlari.aksam,
-    VakitIkonlari.yatsi
+    R.drawable.ic_imsak,
+    R.drawable.ic_gunes,
+    R.drawable.ic_ogle,
+    R.drawable.ic_ikindi,
+    R.drawable.ic_aksam,
+    R.drawable.ic_yatsi
 )
 
 class MainActivity : ComponentActivity() {
@@ -342,7 +342,7 @@ fun EzanVaktiScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = VakitIkonlari.mosque),
+                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_mosque),
                         contentDescription = null,
                         tint = Color(0xFFD4AF37),
                         modifier = Modifier.size(32.dp)
@@ -359,7 +359,7 @@ fun EzanVaktiScreen(
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = VakitIkonlari.notification),
+                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_notification),
                         contentDescription = null,
                         tint = if (notificationEnabled) Color(0xFFD4AF37) else Color.Gray
                     )
@@ -435,7 +435,7 @@ fun EzanVaktiScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = ImageVector.vectorResource(id = VakitIkonlari.hourglass),
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_hourglass),
                                     contentDescription = null,
                                     tint = Color(0xFFD4AF37),
                                     modifier = Modifier.size(24.dp)
@@ -602,7 +602,7 @@ fun PrayerCard(
             ) {
                 if (isCurrent) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = VakitIkonlari.current),
+                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_current),
                         contentDescription = null,
                         tint = Color(0xFFD4AF37),
                         modifier = Modifier.size(12.dp)
