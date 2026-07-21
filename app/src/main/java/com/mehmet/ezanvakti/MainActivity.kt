@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -160,7 +161,7 @@ fun EzanVaktiScreen(
         val prayerTime = h * 60 + m
         
         var diff = prayerTime - currentTime
-        if (diff < 0) diff += 1440 // 24 saat
+        if (diff < 0) diff += 1440
         
         val hours = diff / 60
         val minutes = diff % 60
@@ -295,7 +296,7 @@ fun EzanVaktiScreen(
     LaunchedEffect(Unit) {
         start()
         while (true) {
-            delay(30000) // 30 saniye
+            delay(30000)
             if (times != null && notificationEnabled) {
                 val newCurrent = findCurrentPrayer(times!!)
                 if (newCurrent != currentPrayerIndex) {
@@ -310,7 +311,6 @@ fun EzanVaktiScreen(
                         updateOngoingNotification(times!!, currentPrayerIndex, nextPrayerIndex)
                     }
                 } else if (nextPrayerIndex >= 0) {
-                    // Süreyi güncelle
                     remainingTime = calculateRemainingTime(times!!, nextPrayerIndex)
                     updateOngoingNotification(times!!, currentPrayerIndex, nextPrayerIndex)
                 }
@@ -337,18 +337,29 @@ fun EzanVaktiScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Ezan Vakti",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFD4AF37)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(id = VakitIkonlari.mosque),
+                        contentDescription = null,
+                        tint = Color(0xFFD4AF37),
+                        modifier = Modifier.size(32.dp)
                     )
-                )
+                    Text(
+                        "Ezan Vakti",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFD4AF37)
+                        )
+                    )
+                }
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Notifications,
+                        imageVector = ImageVector.vectorResource(id = VakitIkonlari.notification),
                         contentDescription = null,
                         tint = if (notificationEnabled) Color(0xFFD4AF37) else Color.Gray
                     )
@@ -419,18 +430,29 @@ fun EzanVaktiScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
-                                Text(
-                                    "Sonraki Vakit",
-                                    color = Color(0xFFD4AF37),
-                                    fontSize = 14.sp
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(id = VakitIkonlari.hourglass),
+                                    contentDescription = null,
+                                    tint = Color(0xFFD4AF37),
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Text(
-                                    VAKIT_ADLARI[nextPrayerIndex],
-                                    color = Color.White,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Column {
+                                    Text(
+                                        "Sonraki Vakit",
+                                        color = Color(0xFFD4AF37),
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        VAKIT_ADLARI[nextPrayerIndex],
+                                        color = Color.White,
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                             Text(
                                 times!![nextPrayerIndex],
@@ -474,7 +496,7 @@ fun EzanVaktiScreen(
                             PrayerCard(
                                 name = VAKIT_ADLARI[index],
                                 time = list[index],
-                                icon = VAKIT_IKONLAR[index],
+                                iconRes = VAKIT_IKONLAR[index],
                                 isCurrent = current,
                                 isNext = isNext
                             )
@@ -548,7 +570,7 @@ fun EzanVaktiScreen(
 fun PrayerCard(
     name: String,
     time: String,
-    icon: ImageVector,
+    iconRes: Int,
     isCurrent: Boolean,
     isNext: Boolean
 ) {
@@ -579,20 +601,19 @@ fun PrayerCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (isCurrent) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(
-                                Color(0xFFD4AF37),
-                                shape = RoundedCornerShape(50)
-                            )
+                    Icon(
+                        imageVector = ImageVector.vectorResource(id = VakitIkonlari.current),
+                        contentDescription = null,
+                        tint = Color(0xFFD4AF37),
+                        modifier = Modifier.size(12.dp)
                     )
                 }
                 
                 Icon(
-                    icon,
+                    imageVector = ImageVector.vectorResource(id = iconRes),
                     contentDescription = null,
-                    tint = if (isCurrent) Color(0xFFD4AF37) else Color(0xFFF5E6A3)
+                    tint = if (isCurrent) Color(0xFFD4AF37) else Color(0xFFF5E6A3),
+                    modifier = Modifier.size(24.dp)
                 )
                 
                 Column {
@@ -627,4 +648,3 @@ fun PrayerCard(
         }
     }
 }
-                       
