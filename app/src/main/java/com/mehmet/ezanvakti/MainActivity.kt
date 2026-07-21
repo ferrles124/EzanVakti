@@ -33,20 +33,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.mehmet.ezanvakti.ui.VakitIkonlari
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
 
 private val VAKIT_ADLARI = listOf("İmsak", "Güneş", "Öğle", "İkindi", "Akşam", "Yatsı")
-private val VAKIT_IKONLAR = listOf(
-    R.drawable.ic_imsak,
-    R.drawable.ic_gunes,
-    R.drawable.ic_ogle,
-    R.drawable.ic_ikindi,
-    R.drawable.ic_aksam,
-    R.drawable.ic_yatsi
-)
 
 class MainActivity : ComponentActivity() {
 
@@ -342,7 +333,7 @@ fun EzanVaktiScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_mosque),
+                        imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_mosque),
                         contentDescription = null,
                         tint = Color(0xFFD4AF37),
                         modifier = Modifier.size(32.dp)
@@ -359,7 +350,7 @@ fun EzanVaktiScreen(
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_notification),
+                        imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_notification),
                         contentDescription = null,
                         tint = if (notificationEnabled) Color(0xFFD4AF37) else Color.Gray
                     )
@@ -435,7 +426,7 @@ fun EzanVaktiScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_hourglass),
+                                    imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_hourglass),
                                     contentDescription = null,
                                     tint = Color(0xFFD4AF37),
                                     modifier = Modifier.size(24.dp)
@@ -473,7 +464,7 @@ fun EzanVaktiScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(16.dp))
 
             times?.let { list ->
                 LazyColumn(
@@ -486,6 +477,16 @@ fun EzanVaktiScreen(
                         val isCurrent = index == currentPrayerIndex
                         val isNext = index == nextPrayerIndex
                         
+                        val iconRes = when (index) {
+                            0 -> com.mehmet.ezanvakti.R.drawable.ic_imsak
+                            1 -> com.mehmet.ezanvakti.R.drawable.ic_gunes
+                            2 -> com.mehmet.ezanvakti.R.drawable.ic_ogle
+                            3 -> com.mehmet.ezanvakti.R.drawable.ic_ikindi
+                            4 -> com.mehmet.ezanvakti.R.drawable.ic_aksam
+                            5 -> com.mehmet.ezanvakti.R.drawable.ic_yatsi
+                            else -> com.mehmet.ezanvakti.R.drawable.ic_imsak
+                        }
+                        
                         AnimatedContent(
                             targetState = isCurrent,
                             transitionSpec = {
@@ -496,7 +497,7 @@ fun EzanVaktiScreen(
                             PrayerCard(
                                 name = VAKIT_ADLARI[index],
                                 time = list[index],
-                                iconRes = VAKIT_IKONLAR[index],
+                                iconRes = iconRes,
                                 isCurrent = current,
                                 isNext = isNext
                             )
@@ -602,7 +603,7 @@ fun PrayerCard(
             ) {
                 if (isCurrent) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(id = R.drawable.ic_current),
+                        imageVector = ImageVector.vectorResource(id = com.mehmet.ezanvakti.R.drawable.ic_current),
                         contentDescription = null,
                         tint = Color(0xFFD4AF37),
                         modifier = Modifier.size(12.dp)
