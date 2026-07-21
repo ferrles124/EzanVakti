@@ -140,6 +140,7 @@ fun EzanVaktiScreen(
     var notificationEnabled by remember { mutableStateOf(true) }
     var currentPrayerIndex by remember { mutableStateOf(-1) }
     var nextPrayerIndex by remember { mutableStateOf(-1) }
+    var remainingTime by remember { mutableStateOf("") }
 
     val gradient = Brush.verticalGradient(
         colors = listOf(
@@ -148,6 +149,24 @@ fun EzanVaktiScreen(
             Color(0xFF0D2B1F)
         )
     )
+
+    fun calculateRemainingTime(times: List<String>, nextIndex: Int): String {
+        if (nextIndex < 0 || nextIndex >= times.size) return ""
+        
+        val now = Calendar.getInstance()
+        val currentTime = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+        
+        val (h, m) = times[nextIndex].split(":").map { it.toInt() }
+        val prayerTime = h * 60 + m
+        
+        var diff = prayerTime - currentTime
+        if (diff < 0) diff += 1440 // 24 saat
+        
+        val hours = diff / 60
+        val minutes = diff % 60
+        
+        return if (hours > 0) "${hours}s ${minutes}dk" else "${minutes}dk"
+    }
 
     fun findCurrentPrayer(times: List<String>): Int {
         val now = Calendar.getInstance()
@@ -169,12 +188,14 @@ fun EzanVaktiScreen(
 
     fun updateOngoingNotification(times: List<String>, currentIndex: Int, nextIndex: Int) {
         if (currentIndex >= 0 && nextIndex >= 0) {
+            val remaining = calculateRemainingTime(times, nextIndex)
             PrayerNotificationService.updateOngoingNotification(
                 context,
                 VAKIT_ADLARI[currentIndex],
                 times[currentIndex],
                 VAKIT_ADLARI[nextIndex],
-                times[nextIndex]
+                times[nextIndex],
+                remaining
             )
         }
     }
@@ -197,7 +218,6 @@ fun EzanVaktiScreen(
                 set(Calendar.SECOND, 0)
             }
             
-            // Vakit geçmişse ertesi güne al
             if (calendar.timeInMillis <= System.currentTimeMillis()) {
                 calendar.add(Calendar.DAY_OF_YEAR, 1)
             }
@@ -235,9 +255,12 @@ fun EzanVaktiScreen(
                         currentPrayerIndex + 1 
                     else -1
                     
+                    if (nextPrayerIndex >= 0) {
+                        remainingTime = calculateRemainingTime(it.times, nextPrayerIndex)
+                    }
+                    
                     if (notificationEnabled) {
                         scheduleNotifications(it.times)
-                        // Kalıcı bildirimi hemen göster
                         if (currentPrayerIndex >= 0 && nextPrayerIndex >= 0) {
                             updateOngoingNotification(it.times, currentPrayerIndex, nextPrayerIndex)
                         }
@@ -269,11 +292,10 @@ fun EzanVaktiScreen(
         }
     }
 
-    // Her dakika kontrol et
     LaunchedEffect(Unit) {
         start()
         while (true) {
-            delay(60000) // 1 dakika
+            delay(30000) // 30 saniye
             if (times != null && notificationEnabled) {
                 val newCurrent = findCurrentPrayer(times!!)
                 if (newCurrent != currentPrayerIndex) {
@@ -281,9 +303,16 @@ fun EzanVaktiScreen(
                     nextPrayerIndex = if (currentPrayerIndex >= 0 && currentPrayerIndex < times!!.size - 1) 
                         currentPrayerIndex + 1 
                     else -1
+                    if (nextPrayerIndex >= 0) {
+                        remainingTime = calculateRemainingTime(times!!, nextPrayerIndex)
+                    }
                     if (currentPrayerIndex >= 0 && nextPrayerIndex >= 0) {
                         updateOngoingNotification(times!!, currentPrayerIndex, nextPrayerIndex)
                     }
+                } else if (nextPrayerIndex >= 0) {
+                    // Süreyi güncelle
+                    remainingTime = calculateRemainingTime(times!!, nextPrayerIndex)
+                    updateOngoingNotification(times!!, currentPrayerIndex, nextPrayerIndex)
                 }
             }
         }
@@ -309,7 +338,7 @@ fun EzanVaktiScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "🕌 Ezan Vakti",
+                    "Ezan Vakti",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
@@ -358,7 +387,7 @@ fun EzanVaktiScreen(
                     )
                 ) {
                     Text(
-                        text = "📅 $date",
+                        text = date,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(12.dp),
@@ -380,32 +409,44 @@ fun EzanVaktiScreen(
                         containerColor = Color(0xFFD4AF37).copy(alpha = 0.2f)
                     )
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(16.dp)
                     ) {
-                        Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    "Sonraki Vakit",
+                                    color = Color(0xFFD4AF37),
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    VAKIT_ADLARI[nextPrayerIndex],
+                                    color = Color.White,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                             Text(
-                                "⏳ Sonraki Vakit",
+                                times!![nextPrayerIndex],
                                 color = Color(0xFFD4AF37),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                VAKIT_ADLARI[nextPrayerIndex],
-                                color = Color.White,
-                                fontSize = 22.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        Text(
-                            times!![nextPrayerIndex],
-                            color = Color(0xFFD4AF37),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (remainingTime.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Kalan süre: $remainingTime",
+                                color = Color(0xFFF5E6A3),
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
@@ -452,7 +493,7 @@ fun EzanVaktiScreen(
                     )
                 ) {
                     Text(
-                        "⚠️ $it",
+                        it,
                         modifier = Modifier.padding(12.dp),
                         color = Color.White
                     )
@@ -563,13 +604,13 @@ fun PrayerCard(
                     )
                     if (isCurrent) {
                         Text(
-                            "🟡 Şu an",
+                            "Şu an",
                             color = Color(0xFFD4AF37),
                             fontSize = 10.sp
                         )
                     } else if (isNext) {
                         Text(
-                            "⏳ Sıradaki",
+                            "Sıradaki",
                             color = Color(0xFFF5E6A3),
                             fontSize = 10.sp
                         )
@@ -586,4 +627,4 @@ fun PrayerCard(
         }
     }
 }
-                        
+                       
