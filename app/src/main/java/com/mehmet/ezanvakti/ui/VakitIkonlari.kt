@@ -1,18 +1,14 @@
 package com.mehmet.ezanvakti.ui
 
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
-import com.mehmet.ezanvakti.R
-
 object VakitIkonlari {
-    val imsak = R.drawable.ic_imsak
-    val gunes = R.drawable.ic_gunes
-    val ogle = R.drawable.ic_ogle
-    val ikindi = R.drawable.ic_ikindi
-    val aksam = R.drawable.ic_aksam
-    val yatsi = R.drawable.ic_yatsi
-    val hourglass = R.drawable.ic_hourglass
-    val mosque = R.drawable.ic_mosque
-    val notification = R.drawable.ic_notification
-    val current = R.drawable.ic_current
+    const val imsak = 0
+    const val gunes = 1
+    const val ogle = 2
+    const val ikindi = 3
+    const val aksam = 4
+    const val yatsi = 5
+    const val hourglass = 6
+    const val mosque = 7
+    const val notification = 8
+    const val current = 9
 }
