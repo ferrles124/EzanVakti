@@ -1,7 +1,6 @@
 package com.mehmet.ezanvakti
 
 import android.app.AlarmManager
-import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -19,7 +18,7 @@ class PrayerNotificationReceiver : BroadcastReceiver() {
         
         val notification = NotificationCompat.Builder(context, "prayer_channel")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("🕌 $name")
+            .setContentTitle(name)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -82,7 +81,8 @@ object PrayerNotificationService {
         currentPrayer: String,
         currentTime: String,
         nextPrayer: String,
-        nextTime: String
+        nextTime: String,
+        remaining: String
     ) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -96,8 +96,8 @@ object PrayerNotificationService {
         
         val notification = NotificationCompat.Builder(context, "prayer_channel")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("🕌 $currentPrayer $currentTime")
-            .setContentText("⏳ Sonraki: $nextPrayer $nextTime")
+            .setContentTitle("$currentPrayer $currentTime")
+            .setContentText("Sonraki: $nextPrayer $nextTime  |  Kalan: $remaining")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
@@ -117,7 +117,7 @@ object PrayerNotificationService {
     private fun showPermissionNotification(context: Context) {
         val notification = NotificationCompat.Builder(context, "prayer_channel")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("⚠️ Alarm İzni Gerekli")
+            .setContentTitle("Alarm Izni Gerekli")
             .setContentText("Ezan vakitleri için alarm iznini etkinleştirin")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
